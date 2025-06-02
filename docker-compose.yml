@@ -5,7 +5,7 @@ services:
     env_file:
       - ./config/goflow2/goflow2.env
     ports:
-      - "${GOFLOW2_PORT}:${GOFLOW2_PORT}/udp"
+      - "${NETFLOW_PORT}:${NETFLOW_PORT}/udp"
     volumes:
       - ./data/flows:/flows         # Optional: store raw flow files if configured
     restart: unless-stopped
