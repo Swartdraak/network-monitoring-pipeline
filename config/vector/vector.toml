@@ -1,0 +1,78 @@
+############################
+# Vector Global Configuration
+############################
+
+[sources.netflow]
+  # Listen for NetFlow v9 on UDP port (matching goflow2)
+  type = "socket"
+  address = "0.0.0.0:${NETFLOW_PORT}"
+  mode = "udp"
+  # decode as netflow v9
+  codec = "netflow"
+
+[transforms.enrich_with_hostname]
+  # Add DNS-based hostname resolution for internal IPs
+  type = "dns_lookup"
+  inputs = ["netflow"]
+  # Which fields to resolve (source and destination IP)
+  forward_lookup = false
+  lookup_fields.ip = ["netflow_source_ip", "netflow_destination_ip"]
+  # Outputs: appends "hostname_source", "hostname_destination" fields when found
+
+[transforms.map_ports_to_application]
+  # Simple port→application mapping
+  type = "remap" # VRL script
+  inputs = ["enrich_with_hostname"]
+  source = '''
+  .application = "unknown"
+  match = {
+    80:  "HTTP",
+    443: "HTTPS",
+    53:  "DNS",
+    22:  "SSH",
+    25:  "SMTP",
+    143: "IMAP",
+    993: "IMAPS",
+    123: "NTP",
+    53:  "DNS"
+  }
+  .application = match[.netflow_destination_port] ?? match[.netflow_source_port] ?? "other"
+  '''
+
+[sinks.influxdb]
+  # Send enriched flow events to InfluxDB 2.x
+  type = "influxdb_metrics" # use metrics sink for time-series; if using logs, use "influxdb_logs"
+  inputs = ["map_ports_to_application"]
+  endpoint = "${INFLUXDB_URL}"
+  bucket = "${INFLUXDB_BUCKET}"
+  org = "${INFLUXDB_ORG}"
+  token = "${INFLUXDB_TOKEN}"
+  # We’ll use measurement "netflow" with tags and fields
+  namespace = "netflow"
+  # Map fields/tags
+  timestamp = "{{ duration_to_timestamp(.netflow_first_switched + \"ms\") }}"
+  # Dimensions (tags) – convert IPs to strings, ports, protocol, application, hostname
+  dimensions = [
+    "netflow_source_ip",
+    "netflow_destination_ip",
+    "netflow_source_port",
+    "netflow_destination_port",
+    "netflow_protocol",
+    "application",
+    "hostname_source",
+    "hostname_destination"
+  ]
+  # What fields to record as numeric
+  field_tables = [
+    { field = "netflow_packets", path = "{{ .netflow_packets }}" },
+    { field = "netflow_bytes", path = "{{ .netflow_bytes }}" }
+  ]
+
+# Vector global telemetry (optional)
+[vector]
+  data_dir = "/var/lib/vector"
+  log = "info"
+  # Expose Prometheus metrics
+  [vector.telemetry]
+    enabled = true
+    address = "0.0.0.0:9000"

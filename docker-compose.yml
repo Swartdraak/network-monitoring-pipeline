@@ -1,0 +1,73 @@
+services:
+  goflow2:
+    image: netsampler/goflow2:latest
+    container_name: goflow2
+    env_file:
+      - ./config/goflow2/goflow2.env
+    ports:
+      - "${GOFLOW2_PORT}:${GOFLOW2_PORT}/udp"
+    volumes:
+      - ./data/flows:/flows         # Optional: store raw flow files if configured
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "netstat -anu | grep ${GOFLOW2_PORT}"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  vector:
+    image: timberio/vector:latest-alpine
+    container_name: vector
+    depends_on:
+      - goflow2
+    ports:
+      - "9000:9000"       # Vector observability port (optional)
+    volumes:
+      - ./config/vector/vector.toml:/etc/vector/vector.toml:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --spider -q http://localhost:9000/metrics || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    env_file:
+      - ./config/influxdb/influxdb.env
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./data/influxdb:/var/lib/influxdb2
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget --spider -q http://localhost:8086/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget --spider -q http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  default:
+    driver: bridge

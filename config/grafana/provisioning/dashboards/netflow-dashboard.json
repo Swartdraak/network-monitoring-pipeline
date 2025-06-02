@@ -1,0 +1,223 @@
+{
+    "id": null,
+    "uid": "netflow-monitoring",
+    "title": "NetFlow Monitoring Dashboard",
+    "tags": ["netflow", "pipeline"],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "InfluxDB"
+        },
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "id": 1,
+        "title": "Top 10 Internal Hosts by Download (Bytes)",
+        "type": "stat",
+        "options": {
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "horizontal",
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "groupBy": [
+              { "type": "tag", "params": ["netflow_destination_ip"] }
+            ],
+            "measurement": "netflow",
+            "orderByTime": "ASC",
+            "policy": "autogen",
+            "refId": "A",
+            "resultFormat": "table",
+            "select": [
+              [
+                { "type": "field", "params": ["netflow_bytes"] },
+                { "type": "sum", "params": [] }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "netflow_destination_ip",
+                "operator": "=~",
+                "value": "/^192\\.168\\./"
+              }
+            ]
+          }
+        ],
+        "transformations": [
+          {
+            "id": "sortBy",
+            "options": { "desc": true, "field": "sum" }
+          },
+          {
+            "id": "limit",
+            "options": { "count": 10 }
+          }
+        ]
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "InfluxDB"
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "id": 2,
+        "title": "Top 10 Internal Hosts by Upload (Bytes)",
+        "type": "stat",
+        "options": {
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "horizontal",
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "groupBy": [
+              { "type": "tag", "params": ["netflow_source_ip"] }
+            ],
+            "measurement": "netflow",
+            "orderByTime": "ASC",
+            "policy": "autogen",
+            "refId": "B",
+            "resultFormat": "table",
+            "select": [
+              [
+                { "type": "field", "params": ["netflow_bytes"] },
+                { "type": "sum", "params": [] }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "netflow_source_ip",
+                "operator": "=~",
+                "value": "/^192\\.168\\./"
+              }
+            ]
+          }
+        ],
+        "transformations": [
+          {
+            "id": "sortBy",
+            "options": { "desc": true, "field": "sum" }
+          },
+          {
+            "id": "limit",
+            "options": { "count": 10 }
+          }
+        ]
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "InfluxDB"
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+        "id": 3,
+        "title": "Traffic by Application (Last 24h)",
+        "type": "bar-chart",
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [],
+            "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": { "displayMode": "list", "placement": "bottom" },
+          "tooltip": { "mode": "single" },
+          "orientation": "vertical",
+          "showValues": "auto"
+        },
+        "targets": [
+          {
+            "aggregateExpression": {
+              "type": "sum",
+              "params": ["netflow_bytes"]
+            },
+            "groupBy": [
+              { "type": "time", "params": ["1h"] },
+              { "type": "tag", "params": ["application"] }
+            ],
+            "measurement": "netflow",
+            "orderByTime": "ASC",
+            "policy": "autogen",
+            "refId": "C",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                { "type": "field", "params": ["netflow_bytes"] },
+                { "type": "sum", "params": [] }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "netflow_source_ip",
+                "operator": "=~",
+                "value": "/^192\\.168\\./"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "InfluxDB"
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+        "id": 4,
+        "title": "Historical Usage Trends (Total Bytes Over Time)",
+        "type": "time-series",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": { "displayMode": "table", "placement": "bottom" },
+          "tooltip": { "mode": "single" }
+        },
+        "targets": [
+          {
+            "groupBy": [
+              { "type": "time", "params": ["1h"] }
+            ],
+            "measurement": "netflow",
+            "orderByTime": "ASC",
+            "policy": "autogen",
+            "refId": "D",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                { "type": "field", "params": ["netflow_bytes"] },
+                { "type": "sum", "params": [] }
+              ]
+            ],
+            "tags": [
+              {
+                "key": "netflow_source_ip",
+                "operator": "=~",
+                "value": "/^192\\.168\\./"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }  

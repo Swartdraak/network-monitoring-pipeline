@@ -1,0 +1,23 @@
+---
+
+### .gitignore (at project root)
+
+```gitignore
+# Ignore persistent data
+data/influxdb/*
+data/grafana/*
+
+# Ignore environment files
+.env
+
+# Ignore Node modules or build artifacts (if any)
+/node_modules/
+/dist/
+/build/
+
+# MacOS and Linux temp files
+.DS_Store
+*.swp
+
+# Scripts logs
+scripts/*.log
