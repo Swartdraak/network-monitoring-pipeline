@@ -116,7 +116,7 @@ See individual service configuration files (`goflow2.env`, `vector.toml`, `influ
 **Clone & Setup:**
 
 ```bash
-git clone https://github.com/yourusername/network-monitoring-pipeline.git
+git clone https://github.com/swartdraak/network-monitoring-pipeline.git
 cd network-monitoring-pipeline
 cp .env.example .env
 # Edit `.env` with your configurations
