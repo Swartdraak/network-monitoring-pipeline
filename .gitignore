@@ -6,6 +6,7 @@
 # Ignore persistent data
 data/influxdb/*
 data/grafana/*
+data/flows/*
 
 # Ignore environment files
 .env
